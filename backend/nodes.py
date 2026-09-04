@@ -1,6 +1,5 @@
 from backend.llm import llm, structured_llm
 
-MAX_REVISIONS = 3
 
 def writer(state):
     topic = state["topic"]
@@ -27,8 +26,9 @@ def reviewer(state):
     draft = state["draft"]
     topic = state["topic"]
 
+    
     response = structured_llm.invoke(
-        f"""
+    f"""
 You are the Reviewer agent in a self-correcting multi-agent system.
 
 Review this answer about "{topic}".
@@ -39,29 +39,25 @@ Check whether:
 3. It contains a small concrete example.
 4. It stays focused on the topic.
 
-Return APPROVE only if all requirements are satisfied.
-Otherwise return REVISE and explain what needs to be improved.
+Rules:
+- If ALL four requirements are satisfied:
+  decision = "APPROVE"
+  feedback = ""
+
+- If ANY requirement is not satisfied:
+  decision = "REVISE"
+  feedback = a specific explanation of what should be changed.
+  DO NOT put the word "REVISE" in the feedback.
 
 Answer:
 {draft}
 """
-    )
+)
 
     return {
         "feedback": response.feedback,
         "decision": response.decision,
     }
-
-
-def route_after_review(state):
-    if state["decision"] == "APPROVE":
-        return "done"
-
-    if state["revision_count"] >= MAX_REVISIONS:
-        return "done"
-
-    return "revise"
-
 
 
 def reviser(state):
@@ -84,5 +80,7 @@ Return only the improved answer.
 """
     )
 
-    return {"draft": response.content}
-
+    return {
+        "draft": response.content,
+        "revision_count": state["revision_count"] + 1,
+    }
