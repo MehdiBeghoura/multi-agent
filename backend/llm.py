@@ -1,7 +1,9 @@
 from typing import Literal
 from pydantic import BaseModel, Field
-from langchain_ollama import ChatOllama
+from langchain_groq import ChatGroq
+from dotenv import load_dotenv
 
+load_dotenv()
 
 
 class ReviewerOutput(BaseModel):
@@ -10,8 +12,8 @@ class ReviewerOutput(BaseModel):
     
     
     
-llm = ChatOllama(
-    model="qwen2.5:3b",
+llm = ChatGroq(
+    model="openai/gpt-oss-20b",
     temperature=0,
 )
 

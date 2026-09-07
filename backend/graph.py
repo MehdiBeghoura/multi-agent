@@ -28,3 +28,57 @@ builder.add_edge("reviser", "reviewer")
 
 graph = builder.compile()
 
+def run_workflow(topic: str):
+    initial_state: State = {
+        "topic": topic,
+        "draft": "",
+        "decision": "",
+        "feedback": "",
+        "revision_count": 0,
+    }
+
+    final_state = initial_state.copy()
+
+    events = []
+
+    for update in graph.stream(
+        initial_state,
+        stream_mode="updates",
+    ):
+        for node_name, values in update.items():
+            final_state.update(values)
+
+            events.append(
+                {
+                    "agent": node_name,
+                    "draft": values.get("draft", ""),
+                    "decision": values.get("decision", ""),
+                    "feedback": values.get("feedback", ""),
+                    "revision_count": final_state["revision_count"],
+                }
+            )
+
+    return {
+        "topic": topic,
+        "events": events,
+        "final_answer": final_state["draft"],
+        "final_decision": final_state["decision"],
+        "revision_count": final_state["revision_count"],
+    }
+    
+def stream_workflow(topic: str):
+    initial_state: State = {
+        "topic": topic,
+        "draft": "",
+        "decision": "",
+        "feedback": "",
+        "revision_count": 0,
+    }
+
+    for chunk in graph.stream(
+        initial_state,
+        stream_mode="updates",
+        version="v2",
+    ):
+        if chunk["type"] == "updates":
+            yield chunk["data"]
